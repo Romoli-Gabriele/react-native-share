@@ -8,7 +8,6 @@
 
 // import RCTLog
 #import <React/RCTLog.h>
-
 #import "InstagramStories.h"
 
 @implementation InstagramStories
@@ -19,11 +18,12 @@ RCT_EXPORT_MODULE();
     resolve:(RCTPromiseResolveBlock)resolve {
     
     NSURL *urlScheme = [NSURL URLWithString:[NSString stringWithFormat:@"instagram-stories://share?source_application=%@", options[@"appId"]]];
-    if (![[UIApplication sharedApplication] canOpenURL:urlScheme]) {
+    /*if (![[UIApplication sharedApplication] canOpenURL:urlScheme]) {
         NSError* error = [self fallbackInstagram];
-        reject(@"cannot open URL",@"cannot open URL",error);
+        NSLog(@"%@", error);
+        reject(@"ERRORE INSTAGRAM",@"cannot open URL",error);
         return;
-    }
+    }*/
 
     // Create dictionary of assets and attribution
     NSMutableDictionary *items = [NSMutableDictionary dictionary];
@@ -84,14 +84,21 @@ RCT_EXPORT_MODULE();
     // Cannot open instagram
     NSString *stringURL = @"https://itunes.apple.com/app/instagram/id389801252";
     NSURL *url = [NSURL URLWithString:stringURL];
-    [[UIApplication sharedApplication] openURL:url];
+    if ([[UIApplication sharedApplication] canOpenURL:url]) {
+            [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:^(BOOL success) {
+                if (!success) {
+                    NSLog(@"Failed to open Instagram");
+                }
+            }];
+            return nil; // Return nil when the Instagram app is opened successfully
+        } else {
+            NSString *errorMessage = @"Instagram not installed";
+            NSDictionary *userInfo = @{NSLocalizedFailureReasonErrorKey: NSLocalizedString(errorMessage, nil)};
+            NSError *error = [NSError errorWithDomain:@"com.rnshare" code:1 userInfo:userInfo];
 
-    NSString *errorMessage = @"Not installed";
-    NSDictionary *userInfo = @{NSLocalizedFailureReasonErrorKey: NSLocalizedString(errorMessage, nil)};
-    NSError *error = [NSError errorWithDomain:@"com.rnshare" code:1 userInfo:userInfo];
-
-    NSLog(errorMessage);
-    return error;
+            NSLog(@"%@", errorMessage);
+            return error;
+        }
 }
 // https://instagram.fhrk1-1.fna.fbcdn.net/vp/80c479ffc246a9320e614fa4def6a3dc/5C667D3F/t51.12442-15/e35/50679864_1663709050595244_6964601913751831460_n.jpg?_nc_ht=instagram.fhrk1-1.fna.fbcdn.net
 @end
